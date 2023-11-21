@@ -30,11 +30,13 @@ class AnimatedScatter(object):
     
     def step(self):
         for n in range(self.numpoints):
-            self.data['pos'][n] = self.data['vel'][n] * self.s
-            self.data['vel'][n] = self.data['acc'][n] * self.s
+            self.data['pos'][n] += self.data['vel'][n] * self.s
+            self.data['vel'][n] += self.data['acc'][n] * self.s
+        return self.data['pos']
 
     def update(self, i):
         xy = self.step()
+        print(xy)
         self.scat.set_offsets(xy)
         return self.scat,
 
