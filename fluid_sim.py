@@ -1,3 +1,6 @@
+# CS155 Final Project
+# Authors: Bella Jariel, Kate Riggs, Luke Summers
+
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
@@ -27,7 +30,7 @@ class AnimatedScatter(object):
     def get_vel(self, x, y):
         val = np.sin(2 * x * y)
         return [val, val]
-    
+
     def step(self):
         for n in range(self.numpoints):
             self.data['pos'][n] += self.data['vel'][n] * self.s
