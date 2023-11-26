@@ -22,6 +22,12 @@ class AnimatedScatter(object):
         self.ani = animation.FuncAnimation(self.fig, self.update, interval=5, 
                                           init_func=self.setup_plot, blit=True)
 
+    def vec_field(self, position, time):
+        to_center = np.array([self.disp/2, self.disp/2]) - position
+        ## Update vector field, as of now just points out from center
+        direction = [to_center[0], to_center[1]]
+        return direction / np.linalg.norm(direction)
+
     def setup_plot(self):
         self.scat = self.ax.scatter(self.data['pos'][:, 0], self.data['pos'][:, 1])
         self.ax.axis([-10, 10, -10, 10])
@@ -31,15 +37,15 @@ class AnimatedScatter(object):
         val = np.sin(2 * x * y)
         return [val, val]
 
-    def step(self):
+    def step(self, frame_number):
         for n in range(self.numpoints):
+            self.data['vel'][n] = self.vec_field(self.data['pos'][n], self.s * frame_number / self.data['mass'][n])
             self.data['pos'][n] += self.data['vel'][n] * self.s
             self.data['vel'][n] += self.data['acc'][n] * self.s
         return self.data['pos']
 
     def update(self, i):
-        xy = self.step()
-        print(xy)
+        xy = self.step(i)
         self.scat.set_offsets(xy)
         return self.scat,
 
