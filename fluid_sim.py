@@ -4,6 +4,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
+import scipy as sp
 
 class AnimatedScatter(object):
     def __init__(self, numpoints=10, disp=10):
@@ -19,8 +20,20 @@ class AnimatedScatter(object):
         for i in range(self.numpoints):
             self.data['vel'][i] = self.get_vel(self.data['pos'][i, 0], self.data['pos'][i, 1])
         self.fig, self.ax = plt.subplots()
-        self.ani = animation.FuncAnimation(self.fig, self.update, interval=5, 
+        self.ani = animation.FuncAnimation(self.fig, self.update, interval=5,
                                           init_func=self.setup_plot, blit=True)
+
+    def kernel(self, r, h):
+        # From https://www.ita.uni-heidelberg.de/research/klessen/people/klessen/publications/presentations/2002-04-26-SPH-lecture-cardiff.pdf
+        # Cubic Spline Kernel
+        zeta = r/h
+        factor = 1/(np.pi*h**3)
+        if (zeta > 0) and (zeta < 1):
+            return factor * (1 - 1.5*zeta**2 + 0.75*zeta**3)
+        elif (zeta >= 1) and (zeta < 2):
+            return factor * 0.25 * (2 - zeta)**3
+        else:
+            return 0
 
     def vec_field(self, position, time):
         to_center = np.array([self.disp/2, self.disp/2]) - position
