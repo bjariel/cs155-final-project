@@ -35,6 +35,22 @@ class AnimatedScatter(object):
         else:
             return 0
 
+    def smooth(self, func, r, h, s):
+        new_data = self.data.copy()
+        density = np.zeros(self.numpoints)
+        # Find density at each point
+        for i in range(self.numpoints):
+            total = 0
+            for j in range(self.numpoints):
+                if i == j:
+                    continue
+                r_ij = np.linalg.norm(self.data['pos'][i] - self.data['pos'][j])
+                if r_ij < s*h:
+                    total += self.kernel(r_ij, h) * self.data['mass'][j]
+            density[i] = total
+
+        # Need to calculate pressure and other forces here
+
     def vec_field(self, position, time):
         to_center = np.array([self.disp/2, self.disp/2]) - position
         ## Update vector field, as of now just points out from center
