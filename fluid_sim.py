@@ -7,7 +7,7 @@ import numpy as np
 import scipy as sp
 
 class AnimatedScatter(object):
-    def __init__(self, numpoints=10, disp=10):
+    def __init__(self, numpoints=20, disp=10):
         self.numpoints = numpoints
         self.disp = disp
         self.s = 0.016
@@ -113,13 +113,21 @@ class AnimatedScatter(object):
 
 
     def vec_field(self, position, time):
-        to_center = np.array([self.disp/2, self.disp/2]) - position
+        ## to_center = np.array([self.disp/2, self.disp/2]) - position
+        x = np.linspace(0, 10, 10)
+        y = np.linspace(0, 10, 10)
+        X, Y = np.meshgrid(x, y)
+        center = np.array([5, 5])
+        U = -(Y - center[1])
+        V = X - center[0]
+        direction = [U, V]
         ## Update vector field, as of now just points out from center
-        direction = [to_center[0], to_center[1]]
+        ## direction = [to_center[0], to_center[1]]
         return direction / np.linalg.norm(direction)
 
     def setup_plot(self):
-        self.scat = self.ax.scatter(self.data['pos'][:, 0], self.data['pos'][:, 1])
+        colors = np.random.rand(20)
+        self.scat = self.ax.scatter(self.data['pos'][:, 0], self.data['pos'][:, 1], s=5000, c=colors)
         self.ax.axis([0, 10, 0, 10])
         return self.scat,
 
@@ -154,3 +162,4 @@ class AnimatedScatter(object):
 if __name__ == '__main__':
     a = AnimatedScatter()
     plt.show()
+    #a.ani.save('animation.mp4', writer='ffmpeg', fps=10, extra_args=['-vcodec', 'libx264'], savefig_kwargs={'pad_inches':0}, dpi=300)
