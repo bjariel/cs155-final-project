@@ -5,12 +5,15 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
 import scipy as sp
+from math import sqrt
 
 class AnimatedScatter(object):
     def __init__(self, numpoints=30, disp=10):
         self.numpoints = numpoints
         self.disp = disp
         self.s = 0.016
+        self.max_vel = 2.0
+        self.wall = 0.05
         self.data = {
             'pos' : np.random.uniform(1.0, self.disp - 1.0, (self.numpoints, 2)),
             'vel' : np.zeros((self.numpoints, 2)),
@@ -133,23 +136,41 @@ class AnimatedScatter(object):
     def get_vel(self, x, y):
         val = np.sin(2 * x * y)
         return [val, val]
-
+# , self.s * frame_number / self.data['mass'][n]
     def step(self, frame_number):
         sph_acc = self.smooth(self.data['pos'], 0.5, self.s)
         for n in range(self.numpoints):
-            # self.data['vel'][n] = self.vec_field(self.data['pos'][n], self.s * frame_number / self.data['mass'][n])
-            if self.data['pos'][n][0] < 0:
-                self.data['pos'][n] = 0
-            elif self.data['pos'][n][1] < 0:
-                self.data['pos'][n] = 0
-            elif self.data['pos'][n][0] > self.disp:
-                self.data['pos'][n] = self.disp
-            elif self.data['pos'][n][1] > self.disp:
-                self.data['pos'][n] = self.disp
-            else:
-                self.data['pos'][n] += ((self.data['vel'][n] * self.s) * 0.5) + (self.vec_field(self.data['pos'][n]) * self.s) 
-                self.data['vel'][n] += self.data['acc'][n] * self.s
-                self.data['vel'][n] += sph_acc[n] * self.s
+            # self.data['vel'][n] = self.vec_field(self.data['pos'][n])
+            # if self.data['pos'][n][0] < 0:
+            #     self.data['pos'][n] = 0
+            # elif self.data['pos'][n][1] < 0:
+            #     self.data['pos'][n] = 0
+            # elif self.data['pos'][n][0] > self.disp:
+            #     self.data['pos'][n] = self.disp
+            # elif self.data['pos'][n][1] > self.disp:
+            #     self.data['pos'][n] = self.disp
+            # else:
+            #     self.data['pos'][n] += ((self.data['vel'][n] * self.s) * 0.5) + (self.vec_field(self.data['pos'][n]) * self.s) 
+            #     self.data['vel'][n] += self.data['acc'][n] * self.s
+            #     self.data['vel'][n] += sph_acc[n] * self.s
+            self.data['pos'][n] += ((self.data['vel'][n] * self.s) * 0.5) + (self.vec_field(self.data['pos'][n]) * self.s)
+            self.data['vel'][n] += self.data['acc'][n] * self.s
+            self.data['vel'][n] += sph_acc[n] * self.s
+            if sqrt(self.data['vel'][n, 0]**2 + self.data['vel'][n, 1]**2) > self.max_vel:
+                self.data['vel'][n,0] *= 0.5
+                self.data['vel'][n,1] *= 0.5
+            if self.data['pos'][n,0] < 0:
+                self.data['acc'][n,0] += self.data['pos'][n,0] * self.wall
+                self.data['pos'][n,0] = 0
+            if self.data['pos'][n,1] < 0:
+                self.data['acc'][n,1] += self.data['pos'][n,1] * self.wall
+                self.data['pos'][n,1] = 0
+            if self.data['pos'][n,0] > self.disp:
+                self.data['acc'][n,0] -= (self.data['pos'][n,0] - self.disp) * self.wall
+                self.data['pos'][n,0] = self.disp
+            if self.data['pos'][n,1] > self.disp:
+                self.data['acc'][n,1] -= (self.data['pos'][n,1] - self.disp) * self.wall
+                self.data['pos'][n,1] = self.disp
         return self.data['pos']
 
     def update(self, i):
