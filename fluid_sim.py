@@ -7,7 +7,7 @@ import numpy as np
 import scipy as sp
 
 class AnimatedScatter(object):
-    def __init__(self, numpoints=20, disp=10):
+    def __init__(self, numpoints=30, disp=10):
         self.numpoints = numpoints
         self.disp = disp
         self.s = 0.016
@@ -112,11 +112,10 @@ class AnimatedScatter(object):
         return acc
 
 
-    def vec_field(self, position, time):
+    def vec_field(self, position):
         ## to_center = np.array([self.disp/2, self.disp/2]) - position
-        x = np.linspace(0, 10, 10)
-        y = np.linspace(0, 10, 10)
-        X, Y = np.meshgrid(x, y)
+        X = position[0]
+        Y = position[1]
         center = np.array([5, 5])
         U = -(Y - center[1])
         V = X - center[0]
@@ -126,7 +125,7 @@ class AnimatedScatter(object):
         return direction / np.linalg.norm(direction)
 
     def setup_plot(self):
-        colors = np.random.rand(20)
+        colors = np.random.rand(30)
         self.scat = self.ax.scatter(self.data['pos'][:, 0], self.data['pos'][:, 1], s=5000, c=colors)
         self.ax.axis([0, 10, 0, 10])
         return self.scat,
@@ -148,7 +147,7 @@ class AnimatedScatter(object):
             elif self.data['pos'][n][1] > self.disp:
                 self.data['pos'][n] = self.disp
             else:
-                self.data['pos'][n] += self.data['vel'][n] * self.s
+                self.data['pos'][n] += ((self.data['vel'][n] * self.s) * 0.5) + (self.vec_field(self.data['pos'][n]) * self.s) 
                 self.data['vel'][n] += self.data['acc'][n] * self.s
                 self.data['vel'][n] += sph_acc[n] * self.s
         return self.data['pos']
