@@ -8,7 +8,7 @@ import scipy as sp
 from math import sqrt
 
 class AnimatedScatter(object):
-    def __init__(self, numpoints=30, disp=10):
+    def __init__(self, numpoints=50, disp=10):
         self.numpoints = numpoints
         self.disp = disp
         self.s = 0.016
@@ -128,8 +128,7 @@ class AnimatedScatter(object):
         return direction / np.linalg.norm(direction)
 
     def setup_plot(self):
-        colors = np.random.rand(30)
-        self.scat = self.ax.scatter(self.data['pos'][:, 0], self.data['pos'][:, 1], s=5000, c=colors)
+        self.scat = self.ax.scatter(self.data['pos'][:, 0], self.data['pos'][:, 1], s=5000, c='orange', alpha=0.4)
         self.ax.axis([0, 10, 0, 10])
         return self.scat,
 
