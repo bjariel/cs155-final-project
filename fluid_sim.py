@@ -8,13 +8,16 @@ import scipy as sp
 from math import sqrt
 
 class AnimatedScatter(object):
-    def __init__(self, numpoints=50, disp=10):
+    def __init__(self, numpoints, disp, s, max_vel, wall, coeff_visc, state_constant, polytropic_index):
         self.numpoints = numpoints
         self.disp = disp
-        self.s = 0.016
-        self.max_vel = 2.0
-        self.wall = 0.05
+        self.s = s
+        self.max_vel = max_vel
+        self.wall = wall
         self.epsilon = 1e-6
+        self.coeff_visc = coeff_visc
+        self.state_constant = state_constant
+        self.polytropic_index = polytropic_index
         self.data = {
             'pos' : np.random.uniform(1.0, self.disp - 1.0, (self.numpoints, 2)),
             'vel' : np.zeros((self.numpoints, 2)),
@@ -110,13 +113,10 @@ class AnimatedScatter(object):
         densities = self.getDensities(r, h)
 
         # Viscosity
-        coeff_visc = 0.0001
-        viscousities = self.getViscosities(densities, r, h, coeff_visc)
+        viscousities = self.getViscosities(densities, r, h, self.coeff_visc)
 
         # Calculate pressure
-        state_constant = 0.5
-        polytropic_index = 0.5
-        pressures = self.getPressures(densities, h, state_constant, polytropic_index)
+        pressures = self.getPressures(densities, h, self.state_constant, self.polytropic_index)
 
         print(pressures)
         # Calculate acceleration due to pressure
@@ -174,6 +174,24 @@ class AnimatedScatter(object):
 
 
 if __name__ == '__main__':
-    a = AnimatedScatter()
-    plt.show()
+    decision = input("Would you like to input your own parameters?(y/n):")
+    if decision == 'y':
+        nump = input("How many particles would you like in the simulation?")
+        d = input("What would you like the display scale to be?")
+        step = input("What would you like the step length to be?")
+        mv = input("what do you want the max particle velocity to be?")
+        w = input("What do you want the wall dampening coefficient to be?")
+        cv = input("What do you want the coefficient of viscosity to be?")
+        sc = input("What do you want the state constant to be?")
+        pi = input("What do you want the polytropic index to be?")
+        a = AnimatedScatter(numpoints=int(nump), disp=int(d), s=float(step), max_vel=float(mv), wall=float(w), 
+                            coeff_visc=float(cv), state_constant=float(sc), polytropic_index=float(pi))
+        plt.show()
+    elif decision == 'n':
+        a = AnimatedScatter(numpoints=50, disp=10, s=0.016, max_vel=2.0, wall=0.05, 
+                            coeff_visc=0.0001, state_constant=0.5, polytropic_index=0.5)
+        plt.show()
+    else:
+        print("Please run again and input 'y' or 'n'")
+    
     #a.ani.save('animation.mp4', writer='ffmpeg', fps=10, extra_args=['-vcodec', 'libx264'], savefig_kwargs={'pad_inches':0}, dpi=300)
