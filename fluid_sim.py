@@ -137,7 +137,7 @@ class AnimatedScatter(object):
         return direction / np.linalg.norm(direction)
 
     def setup_plot(self):
-        self.scat = self.ax.scatter(self.data['pos'][:, 0], self.data['pos'][:, 1], s=5000, c='orange', alpha=0.4)
+        self.scat = self.ax.scatter(self.data['pos'][:, 0], self.data['pos'][:, 1], s=5000, c='lightblue', alpha=0.3)
         self.ax.axis([0, 10, 0, 10])
         return self.scat,
 
@@ -150,19 +150,23 @@ class AnimatedScatter(object):
         sph_acc = self.smooth(self.data['pos'], 0.5, self.s)
         for n in range(self.numpoints):
             if self.data['pos'][n,0] < 0:
-                self.data['acc'][n,0] += self.data['pos'][n,0] * self.wall
+                self.data['vel'][n,0] = -self.data['vel'][n,0]
+                # self.data['acc'][n,0] += self.data['pos'][n,0] * self.wall
                 self.data['pos'][n,0] = 0
             if self.data['pos'][n,1] < 0:
-                self.data['acc'][n,1] += self.data['pos'][n,1] * self.wall
+                self.data['vel'][n,1] = -self.data['vel'][n,1]
+                # self.data['acc'][n,1] += self.data['pos'][n,1] * self.wall
                 self.data['pos'][n,1] = 0
             if self.data['pos'][n,0] > self.disp:
-                self.data['acc'][n,0] -= (self.data['pos'][n,0] - self.disp) * self.wall
+                self.data['vel'][n,0] = -self.data['vel'][n,0]
+                # self.data['acc'][n,0] -= (self.data['pos'][n,0] - self.disp) * self.wall
                 self.data['pos'][n,0] = self.disp
             if self.data['pos'][n,1] > self.disp:
-                self.data['acc'][n,1] -= (self.data['pos'][n,1] - self.disp) * self.wall
+                self.data['vel'][n,1] = -self.data['vel'][n,1]
+                # self.data['acc'][n,1] -= (self.data['pos'][n,1] - self.disp) * self.wall
                 self.data['pos'][n,1] = self.disp
             else:
-                self.data['pos'][n] += ((self.data['vel'][n] * self.s) * 0.5) # + (self.vec_field(self.data['pos'][n]) * self.s) 
+                self.data['pos'][n] += ((self.data['vel'][n] * self.s) * 0.5) + (self.vec_field(self.data['pos'][n]) * self.s) 
                 self.data['vel'][n] += self.data['acc'][n] * self.s
                 self.data['vel'][n] += sph_acc[n] * self.s
         return self.data['pos']
@@ -188,10 +192,10 @@ if __name__ == '__main__':
                             coeff_visc=float(cv), state_constant=float(sc), polytropic_index=float(pi))
         plt.show()
     elif decision == 'n':
-        a = AnimatedScatter(numpoints=50, disp=10, s=0.016, max_vel=2.0, wall=0.05, 
-                            coeff_visc=0.0001, state_constant=0.5, polytropic_index=0.5)
+        a = AnimatedScatter(numpoints=30, disp=10, s=0.016, max_vel=30.0, wall=0.5, 
+                            coeff_visc=0.0001, state_constant=13, polytropic_index=0.5)
         plt.show()
     else:
         print("Please run again and input 'y' or 'n'")
     
-    #a.ani.save('animation.mp4', writer='ffmpeg', fps=10, extra_args=['-vcodec', 'libx264'], savefig_kwargs={'pad_inches':0}, dpi=300)
+    # a.ani.save('animation.mp4', writer='ffmpeg', fps=10, extra_args=['-vcodec', 'libx264'], savefig_kwargs={'pad_inches':0}, dpi=300)
