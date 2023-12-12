@@ -53,7 +53,7 @@ class AnimatedScatter(object):
         n = - exp / (np.pi * h**4) * (1 - r**2 / 2 * h**2)
         return n
 
-    def getDensities(self, r, h):
+    def getDensities(self, h):
         densities = np.zeros(self.numpoints)
         for i in range(self.numpoints):
             total = 0
@@ -65,7 +65,7 @@ class AnimatedScatter(object):
             densities[i] = total
         return densities
 
-    def getViscosities(self, densities, r, h, mu):
+    def getViscosities(self, densities, h, mu):
         viscousities = np.zeros((self.numpoints, 2))
         for i in range(self.numpoints):
             total = np.zeros(2)
@@ -80,7 +80,7 @@ class AnimatedScatter(object):
                 np.divide(result, 1.0, out=result)  # Avoid division by zero
                 np.clip(result, -self.epsilon, self.epsilon, out=result)  # Clip large values
                 total += result
-                viscousities[i] = total
+            viscousities[i] = total
         return viscousities
 
     def getPressures(self, densities, h, k, n):
@@ -89,16 +89,15 @@ class AnimatedScatter(object):
             pressures[i] = k * densities[i]**(1 + 1/n)
         return pressures
 
-    def getAcc(self, pressures, densities, r, h, s):
+    def getAcc(self, pressures, densities, h, s):
         # Initialize acceleration arrays
         acc = np.zeros((self.numpoints, 2))
         for i in range(self.numpoints):
             for j in range(self.numpoints):
                 # Calculate pairwise distances
-                dx = self.data['pos'][j][0] - self.data['pos'][i][0]
-                dy = self.data['pos'][j][1] - self.data['pos'][i][1]
+                r_ij = self.data['pos'][j] - self.data['pos'][i]
                 # Calculate gradient of W
-                dWxy = self.gradW(dx, dy, h)
+                dWxy = self.gradW(r_ij[0], r_ij[1], h)
                 # Calculate pressure contribution to acceleration
                 if densities[j] < self.epsilon or densities[i] < self.epsilon:
                     continue
@@ -110,17 +109,16 @@ class AnimatedScatter(object):
 
     def smooth(self, r, h, s):
         # Find density at each point
-        densities = self.getDensities(r, h)
+        densities = self.getDensities(h)
 
         # Viscosity
-        viscousities = self.getViscosities(densities, r, h, self.coeff_visc)
+        viscousities = self.getViscosities(densities, h, self.coeff_visc)
 
         # Calculate pressure
         pressures = self.getPressures(densities, h, self.state_constant, self.polytropic_index)
 
-        print(pressures)
         # Calculate acceleration due to pressure
-        acc = self.getAcc(pressures, densities, r, h, s)
+        acc = self.getAcc(pressures, densities, h, s)
         return acc + viscousities
 
 
@@ -142,8 +140,9 @@ class AnimatedScatter(object):
         return self.scat,
 
     def get_vel(self, x, y):
-        val = np.sin(2 * x * y)
-        return [val, val]
+        val_x = np.sin(2 * x * y)
+        val_y = np.cos(3 * x / (y + 1))
+        return [val_x, val_y]
     # , self.s * frame_number / self.data['mass'][n]
 
     def step(self, frame_number):
@@ -166,7 +165,7 @@ class AnimatedScatter(object):
                 # self.data['acc'][n,1] -= (self.data['pos'][n,1] - self.disp) * self.wall
                 self.data['pos'][n,1] = self.disp
             else:
-                self.data['pos'][n] += ((self.data['vel'][n] * self.s) * 0.5) + (self.vec_field(self.data['pos'][n]) * self.s) 
+                self.data['pos'][n] += ((self.data['vel'][n] * self.s) * 0.5) # + (self.vec_field(self.data['pos'][n]) * self.s) 
                 self.data['vel'][n] += self.data['acc'][n] * self.s
                 self.data['vel'][n] += sph_acc[n] * self.s
         return self.data['pos']
