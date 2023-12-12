@@ -15,6 +15,8 @@ class AnimatedScatter(object):
         self.max_vel = max_vel
         self.wall = wall
         self.epsilon = 1e-6
+        self.pressFactor = 0.00008
+        self.rest_density = 3.0
         self.coeff_visc = coeff_visc
         self.state_constant = state_constant
         self.polytropic_index = polytropic_index
@@ -22,10 +24,13 @@ class AnimatedScatter(object):
             'pos' : np.random.uniform(1.0, self.disp - 1.0, (self.numpoints, 2)),
             'vel' : np.zeros((self.numpoints, 2)),
             'acc' : np.zeros((self.numpoints, 2)),
-            'mass' : np.ones(self.numpoints)
+            'mass' : np.ones(self.numpoints),
+            'neighboors' : [],
+            'press' : np.zeros(self.numpoints)
         }
         for i in range(self.numpoints):
             self.data['vel'][i] = self.get_vel(self.data['pos'][i, 0], self.data['pos'][i, 1])
+            self.data['neighboors'].append([])
         self.fig, self.ax = plt.subplots()
         self.ani = animation.FuncAnimation(self.fig, self.update, interval=5,
                                           init_func=self.setup_plot, blit=True)
@@ -53,7 +58,7 @@ class AnimatedScatter(object):
         n = - exp / (np.pi * h**4) * (1 - r**2 / 2 * h**2)
         return n
 
-    def getDensities(self, h):
+    def getDensities(self, r, h):
         densities = np.zeros(self.numpoints)
         for i in range(self.numpoints):
             total = 0
@@ -61,43 +66,81 @@ class AnimatedScatter(object):
                 if i == j:
                     continue
                 r_ij = self.data['pos'][i] - self.data['pos'][j]
-                total += self.kernel(r_ij[0], r_ij[1], h) * self.data['mass'][j]
+                dist = sqrt(r_ij[0]**2 + r_ij[1]**2)
+                if dist < 0.75:
+                    total += self.kernel(r_ij[0], r_ij[1], h) * self.data['mass'][j]
+                    self.data['neighboors'][i].append(j)
             densities[i] = total
+            self.data['press'][i] = self.pressFactor * (total - self.rest_density)
         return densities
 
-    def getViscosities(self, densities, h, mu):
+    def getViscosities(self, densities, r, h, mu):
         viscousities = np.zeros((self.numpoints, 2))
         for i in range(self.numpoints):
             total = np.zeros(2)
-            for j in range(self.numpoints):
-                if i == j:
-                    continue
+            for j in self.data['neighboors'][i]:
                 r_ij = self.data['pos'][i] - self.data['pos'][j]
-                if densities[j] == 0:
-                    continue
+                # if densities[j] == 0:
+                #     continue
                 laplacian = self.LoG(r_ij[0], r_ij[1], h)
                 result = mu * (self.data['vel'][j] - self.data['vel'][i]) * laplacian * self.data['mass'][j] / densities[j]
                 np.divide(result, 1.0, out=result)  # Avoid division by zero
                 np.clip(result, -self.epsilon, self.epsilon, out=result)  # Clip large values
                 total += result
-            viscousities[i] = total
+                viscousities[i] = total
         return viscousities
 
-    def getPressures(self, densities, h, k, n):
-        pressures = np.zeros(self.numpoints)
+    def getPressures(self, densities, r, h, k, n):
+        pressures = np.zeros((self.numpoints, 2))
         for i in range(self.numpoints):
-            pressures[i] = k * densities[i]**(1 + 1/n)
+            # pressures[i] = k * densities[i]**(1 + 1/n)
+            pressure = [0, 0]
+            for j in self.data['neighboors'][i]:
+                part_to_neigh = [self.data['pos'][j, 0] - self.data['pos'][i, 0], 
+                                 self.data['pos'][j, 1] - self.data['pos'][i, 1]]
+                dist = sqrt(part_to_neigh[0]**2 + part_to_neigh[1]**2)
+                norm_dist = 1 - dist
+                total = (self.data['press'][i] + self.data['press'][j]) * norm_dist**2
+                if dist != 0:
+                    press_vec = [part_to_neigh[0] * total / dist,
+                                part_to_neigh[1] * total / dist]
+                else:
+                    #randomly move particles apart that are too close
+                    x = np.random()
+                    y = np.random()
+                    if x > 0.5 and y > 0.5:
+                        dx = 0.1
+                        dy = 0.1
+                    elif x > 0.5 and y <= 0.5:
+                        dx = 0.1
+                        dy = -0.1
+                    elif x <= 0.5 and y > 0.5:
+                        dx = -0.1
+                        dy = 0.1
+                    else:
+                        dx = -0.1
+                        dy = -0.1
+                    self.data['pos'][j, 0] += dx
+                    self.data['pos'][j, 1] += dy
+                pressures[j, 0] += press_vec[0]
+                pressures[j, 1] += press_vec[1]
+                pressure[0] += press_vec[0]
+                pressure[1] += press_vec[1]
+            pressures[i, 0] -= pressure[0]
+            pressures[i, 1] -= pressure[1]
+
         return pressures
 
-    def getAcc(self, pressures, densities, h, s):
+    def getAcc(self, pressures, densities, r, h, s):
         # Initialize acceleration arrays
         acc = np.zeros((self.numpoints, 2))
         for i in range(self.numpoints):
             for j in range(self.numpoints):
                 # Calculate pairwise distances
-                r_ij = self.data['pos'][j] - self.data['pos'][i]
+                dx = self.data['pos'][j][0] - self.data['pos'][i][0]
+                dy = self.data['pos'][j][1] - self.data['pos'][i][1]
                 # Calculate gradient of W
-                dWxy = self.gradW(r_ij[0], r_ij[1], h)
+                dWxy = self.gradW(dx, dy, h)
                 # Calculate pressure contribution to acceleration
                 if densities[j] < self.epsilon or densities[i] < self.epsilon:
                     continue
@@ -109,16 +152,17 @@ class AnimatedScatter(object):
 
     def smooth(self, r, h, s):
         # Find density at each point
-        densities = self.getDensities(h)
+        densities = self.getDensities(r, h)
 
         # Viscosity
-        viscousities = self.getViscosities(densities, h, self.coeff_visc)
+        viscousities = self.getViscosities(densities, r, h, self.coeff_visc)
 
         # Calculate pressure
-        pressures = self.getPressures(densities, h, self.state_constant, self.polytropic_index)
+        pressures = self.getPressures(densities, r, h, self.state_constant, self.polytropic_index)
 
+        # print(pressures)
         # Calculate acceleration due to pressure
-        acc = self.getAcc(pressures, densities, h, s)
+        acc = self.getAcc(pressures, densities, r, h, s)
         return acc + viscousities
 
 
@@ -135,14 +179,13 @@ class AnimatedScatter(object):
         return direction / np.linalg.norm(direction)
 
     def setup_plot(self):
-        self.scat = self.ax.scatter(self.data['pos'][:, 0], self.data['pos'][:, 1], s=5000, c='lightblue', alpha=0.3)
+        self.scat = self.ax.scatter(self.data['pos'][:, 0], self.data['pos'][:, 1], s=500, c='lightblue', alpha=0.25)
         self.ax.axis([0, 10, 0, 10])
         return self.scat,
 
     def get_vel(self, x, y):
-        val_x = np.sin(2 * x * y)
-        val_y = np.cos(3 * x / (y + 1))
-        return [val_x, val_y]
+        val = np.sin(2 * x * y)
+        return [val, val]
     # , self.s * frame_number / self.data['mass'][n]
 
     def step(self, frame_number):
@@ -165,7 +208,7 @@ class AnimatedScatter(object):
                 # self.data['acc'][n,1] -= (self.data['pos'][n,1] - self.disp) * self.wall
                 self.data['pos'][n,1] = self.disp
             else:
-                self.data['pos'][n] += ((self.data['vel'][n] * self.s) * 0.5) # + (self.vec_field(self.data['pos'][n]) * self.s) 
+                self.data['pos'][n] += ((self.data['vel'][n] * self.s) * 0.5) + (self.vec_field(self.data['pos'][n]) * self.s) 
                 self.data['vel'][n] += self.data['acc'][n] * self.s
                 self.data['vel'][n] += sph_acc[n] * self.s
         return self.data['pos']
@@ -191,7 +234,7 @@ if __name__ == '__main__':
                             coeff_visc=float(cv), state_constant=float(sc), polytropic_index=float(pi))
         plt.show()
     elif decision == 'n':
-        a = AnimatedScatter(numpoints=30, disp=10, s=0.016, max_vel=30.0, wall=0.5, 
+        a = AnimatedScatter(numpoints=100, disp=10, s=0.016, max_vel=30.0, wall=0.5, 
                             coeff_visc=0.0001, state_constant=13, polytropic_index=0.5)
         plt.show()
     else:
