@@ -151,6 +151,7 @@ class AnimatedScatter(object):
         return acc
 
     def smooth(self, r, h, s):
+        # https://github.com/AlexandreSajus/Python-Fluid-Simulation
         # Find density at each point
         densities = self.getDensities(r, h)
 
@@ -224,22 +225,20 @@ class AnimatedScatter(object):
 if __name__ == '__main__':
     decision = input("Would you like to input your own parameters?(y/n):")
     if decision == 'y':
-        nump = input("How many particles would you like in the simulation?")
-        d = input("What would you like the display scale to be?")
-        step = input("What would you like the step length to be?")
-        mv = input("what do you want the max particle velocity to be?")
-        w = input("What do you want the wall dampening coefficient to be?")
-        cv = input("What do you want the coefficient of viscosity to be?")
-        sc = input("What do you want the state constant to be?")
-        pi = input("What do you want the polytropic index to be?")
-        a = AnimatedScatter(numpoints=int(nump), disp=int(d), s=float(step), max_vel=float(mv), wall=float(w), 
-                            coeff_visc=float(cv), state_constant=float(sc), polytropic_index=float(pi))
+        nump = input("How many particles would you like in the simulation? (1 - 50)")
+        # d = input("What would you like the display scale to be?")
+        # step = input("What would you like the step length to be?")
+        # mv = input("what do you want the max particle velocity to be?")
+        # w = input("What do you want the wall dampening coefficient to be?")
+        cv = input("What do you want the coefficient of viscosity to be? (0.0001 - 0.1)")
+        sc = input("What do you want the state constant to be? (0.4 - 0.6)")
+        # pi = input("What do you want the polytropic index to be? (0.4 - 0.6)")
+        a = AnimatedScatter(numpoints=int(nump), disp=10, s=0.016, max_vel=30.0, wall=float(w), 
+                            coeff_visc=float(cv), state_constant=float(sc), polytropic_index=0.5)
         plt.show()
     elif decision == 'n':
         a = AnimatedScatter(numpoints=100, disp=10, s=0.016, max_vel=30.0, wall=0.5, 
-                            coeff_visc=0.0001, state_constant=13, polytropic_index=0.5)
-        a = AnimatedScatter(numpoints=50, disp=10, s=0.016, max_vel=30.0, wall=0.5, 
-                            coeff_visc=0.01, state_constant=13, polytropic_index=0.5)
+                            coeff_visc=0.0001, state_constant=0.5, polytropic_index=0.5)
         plt.show()
     else:
         print("Please run again and input 'y' or 'n'")
