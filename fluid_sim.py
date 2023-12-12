@@ -151,6 +151,7 @@ class AnimatedScatter(object):
         return acc
 
     def smooth(self, r, h, s):
+        # https://github.com/AlexandreSajus/Python-Fluid-Simulation
         # Find density at each point
         densities = self.getDensities(r, h)
 
