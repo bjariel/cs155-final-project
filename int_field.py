@@ -105,7 +105,7 @@ import matplotlib.animation as animation
 
 class InteractiveParticles:
     def __init__(self):
-        self.particles = np.random.rand(10, 2) * 4 - 2  # 10 particles within [-2, 2] range
+        self.particles = np.random.rand(10, 2) * 4 - 2 
         self.vector_field = self.create_vector_field()
         self.is_mouse_pressed = False
 
@@ -119,19 +119,15 @@ class InteractiveParticles:
         return X, Y, U, V
 
     def update_particles(self):
-        # Update particle velocities based on the current vector field
         row = ((self.particles[:, 0] + 2) / 4 * (len(self.vector_field[0][0]) - 1)).astype(int)
         col = ((self.particles[:, 1] + 2) / 4 * (len(self.vector_field[1]) - 1)).astype(int)
         self.particle_velocities = np.array([self.vector_field[2][row, col], self.vector_field[3][row, col]]).T
 
-        # Update particle positions based on their velocities
-        self.particles += self.particle_velocities * 0.05  # Adjust the factor for velocity magnitude
+        self.particles += self.particle_velocities * 0.05
 
-        # Ensure particles stay within bounds [-2, 2]
         self.particles = np.clip(self.particles, -2, 2)
 
     def modify_vector_field(self, delta_x, delta_y):
-        # Update vector field based on mouse movement
         X, Y, U, V = self.vector_field
         U += delta_x
         V += delta_y
@@ -144,10 +140,9 @@ class InteractiveParticles:
 
     def on_move(self, x, y):
         if self.is_mouse_pressed:
-            delta_x = x / 100 - 2  # Normalize to [-2, 2]
+            delta_x = x / 100 - 2 
             delta_y = y / 100 - 2
 
-            # Update the vector field based on mouse movement
             self.vector_field = self.modify_vector_field(delta_x, delta_y)
 
     def simulate(self):
@@ -156,7 +151,6 @@ class InteractiveParticles:
         ax.set_ylim(-2.5, 2.5)
         ax.set_title('Particles')
 
-        # Start listening to mouse events
         with Listener(on_click=self.on_click, on_move=self.on_move) as listener:
             ani = FuncAnimation(fig, self.update_and_plot_particles, frames=200, interval=50, blit=False)
             plt.show()
