@@ -1,17 +1,17 @@
 
-RUN "python fluid_sim.py" to see the animation
+RUN "python fluid_sim.py" to see the animation.
 
 To save a video of the animation, uncomment the last line of code starting with a.ani.save.
     When you save the video the first frame appears to freeze and be overlayed with
     the rest of the video.
 
-interactive_field.py was our first attempt at mouse tracking to change a vector field
+interactive_field.py was our first attempt at mouse tracking to change a vector field.
 
-int_field.py was a version of mouse tracking that added particles moving on the vector field
-    the class InteractiveVectorField is a version using matplotlib
-    the class InteractiveParticles is a version using pynput
+int_field.py was a version of mouse tracking that added particles moving on the vector field.
+    The class InteractiveVectorField is a version using matplotlib.
+    The class InteractiveParticles is a version using pynput.
 
-    both attempts had issues with particles disappearing after mouse interactions
+    Both attempts had issues with particles disappearing after mouse interactions.
 
-    mouse tracking & interactions were not implemented in the fluid_sim.py file
-    because issues with particles disappearing
+    Mouse tracking & interactions were not implemented in the fluid_sim.py file
+    because issues with particles disappearing.
