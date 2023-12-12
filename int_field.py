@@ -152,6 +152,8 @@ class InteractiveParticles:
         ax.set_title('Particles')
 
         with Listener(on_click=self.on_click, on_move=self.on_move) as listener:
+            # https://pypi.org/project/pynput/
+            # https://pynput.readthedocs.io/en/latest/mouse.html
             ani = FuncAnimation(fig, self.update_and_plot_particles, frames=200, interval=50, blit=False)
             plt.show()
 
