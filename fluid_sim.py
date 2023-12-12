@@ -41,7 +41,7 @@ class AnimatedScatter(object):
 
     def gradW(self, x, y, h):
         r = np.sqrt(x**2 + y**2)
-        n = -2 * self.kernel(x, y, h) * np.array([x,y])
+        n = -2 * 1/h**2 * self.kernel(x, y, h) * np.array([x,y])
 
         return n
 
@@ -66,7 +66,7 @@ class AnimatedScatter(object):
         return densities
 
     def getViscosities(self, densities, h, mu):
-        viscousities = np.zeros((self.numpoints, 2))
+        viscosities = np.zeros((self.numpoints, 2))
         for i in range(self.numpoints):
             total = np.zeros(2)
             for j in range(self.numpoints):
@@ -76,12 +76,12 @@ class AnimatedScatter(object):
                 if densities[j] == 0:
                     continue
                 laplacian = self.LoG(r_ij[0], r_ij[1], h)
-                result = mu * (self.data['vel'][j] - self.data['vel'][i]) * laplacian * self.data['mass'][j] / densities[j]
+                result = mu * self.data['vel'][i] * laplacian * self.data['mass'][j] / densities[j]
                 np.divide(result, 1.0, out=result)  # Avoid division by zero
                 np.clip(result, -self.epsilon, self.epsilon, out=result)  # Clip large values
                 total += result
-            viscousities[i] = total
-        return viscousities
+            viscosities[i] = total
+        return viscosities
 
     def getPressures(self, densities, h, k, n):
         pressures = np.zeros(self.numpoints)
@@ -112,14 +112,14 @@ class AnimatedScatter(object):
         densities = self.getDensities(h)
 
         # Viscosity
-        viscousities = self.getViscosities(densities, h, self.coeff_visc)
+        viscosities = self.getViscosities(densities, h, self.coeff_visc)
 
         # Calculate pressure
         pressures = self.getPressures(densities, h, self.state_constant, self.polytropic_index)
 
         # Calculate acceleration due to pressure
         acc = self.getAcc(pressures, densities, h, s)
-        return acc + viscousities
+        return acc + viscosities
 
 
     def vec_field(self, position):
@@ -135,7 +135,7 @@ class AnimatedScatter(object):
         return direction / np.linalg.norm(direction)
 
     def setup_plot(self):
-        self.scat = self.ax.scatter(self.data['pos'][:, 0], self.data['pos'][:, 1], s=5000, c='lightblue', alpha=0.3)
+        self.scat = self.ax.scatter(self.data['pos'][:, 0], self.data['pos'][:, 1], s=500, c='lightblue', alpha=0.3)
         self.ax.axis([0, 10, 0, 10])
         return self.scat,
 
@@ -146,7 +146,7 @@ class AnimatedScatter(object):
     # , self.s * frame_number / self.data['mass'][n]
 
     def step(self, frame_number):
-        sph_acc = self.smooth(self.data['pos'], 0.5, self.s)
+        sph_acc = self.smooth(self.data['pos'], 1, self.s)
         for n in range(self.numpoints):
             if self.data['pos'][n,0] < 0:
                 self.data['vel'][n,0] = -self.data['vel'][n,0]
@@ -165,7 +165,7 @@ class AnimatedScatter(object):
                 # self.data['acc'][n,1] -= (self.data['pos'][n,1] - self.disp) * self.wall
                 self.data['pos'][n,1] = self.disp
             else:
-                self.data['pos'][n] += ((self.data['vel'][n] * self.s) * 0.5) # + (self.vec_field(self.data['pos'][n]) * self.s) 
+                self.data['pos'][n] += ((self.data['vel'][n] * self.s) * 0.5) + (self.vec_field(self.data['pos'][n]) * self.s) 
                 self.data['vel'][n] += self.data['acc'][n] * self.s
                 self.data['vel'][n] += sph_acc[n] * self.s
         return self.data['pos']
@@ -191,10 +191,10 @@ if __name__ == '__main__':
                             coeff_visc=float(cv), state_constant=float(sc), polytropic_index=float(pi))
         plt.show()
     elif decision == 'n':
-        a = AnimatedScatter(numpoints=30, disp=10, s=0.016, max_vel=30.0, wall=0.5, 
-                            coeff_visc=0.0001, state_constant=13, polytropic_index=0.5)
+        a = AnimatedScatter(numpoints=50, disp=10, s=0.016, max_vel=30.0, wall=0.5, 
+                            coeff_visc=0.01, state_constant=13, polytropic_index=0.5)
         plt.show()
     else:
         print("Please run again and input 'y' or 'n'")
     
-    # a.ani.save('animation.mp4', writer='ffmpeg', fps=10, extra_args=['-vcodec', 'libx264'], savefig_kwargs={'pad_inches':0}, dpi=300)
+    a.ani.save('animation.mp4', writer='ffmpeg', fps=10, extra_args=['-vcodec', 'libx264'], savefig_kwargs={'pad_inches':0}, dpi=300)
